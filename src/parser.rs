@@ -27,18 +27,37 @@ fn parse_lines(lines: &[&str]) -> Result<YAMLData, YAMLParseError> {
 
 fn parse_sequence(lines: &[&str]) -> Result<YAMLData, YAMLParseError> {
     let mut items = Vec::new();
+    let mut nested_lines = Vec::new();
+    let mut in_nested = false;
 
     for line in lines {
         if line.starts_with('-') {
+            if in_nested {
+                let value = parse_lines(&nested_lines)?;
+                items.push(value);
+                nested_lines.clear();
+                in_nested = false;
+            }
             let item = line.trim_start_matches('-').trim();
             if item.is_empty() {
                 return Err(YAMLParseError::InvalidFormat);
             }
-            match parse_yaml(item) {
-                Ok(parsed_item) => items.push(parsed_item),
-                Err(_) => return Err(YAMLParseError::InvalidFormat),
+            if item.starts_with(':') || item.contains(':') {
+                nested_lines.push(item);
+                in_nested = true;
+            } else {
+                items.push(parse_yaml(item)?);
             }
+        } else if in_nested {
+            nested_lines.push(line);
+        } else {
+            return Err(YAMLParseError::InvalidFormat);
         }
+    }
+
+    if in_nested {
+        let value = parse_lines(&nested_lines)?;
+        items.push(value);
     }
 
     Ok(YAMLData::Sequence(items))
@@ -52,14 +71,17 @@ fn parse_mapping(lines: &[&str]) -> Result<YAMLData, YAMLParseError> {
 
     for line in lines {
         if let Some((k, v)) = line.split_once(':') {
+            // If there is a current key, finalize it
             if let Some(current_key) = key.take() {
                 let value = parse_lines(&nested_lines)?;
                 map.insert(current_key, value);
                 nested_lines.clear();
             }
 
+            // Determine the current indentation level
             current_indent = Some(line.chars().take_while(|c| c.is_whitespace()).count());
 
+            // Set the new key
             key = Some(k.trim().to_string());
 
             let value = v.trim();
@@ -72,16 +94,24 @@ fn parse_mapping(lines: &[&str]) -> Result<YAMLData, YAMLParseError> {
                 current_indent = None;
             }
         } else if let Some(indent) = current_indent {
+            // Check if the line is part of the current nested structure
             if line.chars().take(indent).all(|c| c.is_whitespace()) {
                 nested_lines.push(line.trim_start_matches(' '));
             } else {
-                return Err(YAMLParseError::InvalidFormat);
+                if let Some(current_key) = key.take() {
+                    let value = parse_lines(&nested_lines)?;
+                    map.insert(current_key, value);
+                    nested_lines.clear();
+                }
+                current_indent = None;
+                key = None;
             }
         } else {
             return Err(YAMLParseError::InvalidFormat);
         }
     }
 
+    // Finalize any remaining key
     if let Some(current_key) = key {
         let value = parse_lines(&nested_lines)?;
         map.insert(current_key, value);
@@ -91,5 +121,6 @@ fn parse_mapping(lines: &[&str]) -> Result<YAMLData, YAMLParseError> {
 }
 
 fn is_invalid_value(value: &str) -> bool {
+    // Simple check for invalid value
     value.starts_with('[') && !value.ends_with(']')
 }
