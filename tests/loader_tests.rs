@@ -88,4 +88,23 @@ mod tests {
         let result = load_yaml_file(filename);
         assert!(result.is_err());
     }
+    
+    #[test]
+    fn test_load_yaml_file_fruits() {
+        let filename = "fruits.yaml";
+        std::fs::write(filename, "fruits:\n  - apple\n  - banana\n  - cherry").unwrap();
+
+        let mut expected_map = HashMap::new();
+        let mut fruits = Vec::new();
+        fruits.push(YAMLData::Scalar("apple".to_string()));
+        fruits.push(YAMLData::Scalar("banana".to_string()));
+        fruits.push(YAMLData::Scalar("cherry".to_string()));
+        expected_map.insert("fruits".to_string(), YAMLData::Sequence(fruits));
+        let expected = YAMLData::Mapping(expected_map);
+
+        let result = load_yaml_file(filename).unwrap();
+        assert_eq!(result, expected);
+
+        std::fs::remove_file(filename).unwrap();
+    }
 }
