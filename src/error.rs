@@ -5,8 +5,3 @@ pub enum YAMLParseError {
     SerializationError,
     DeserializationError,
 }
-
-pub enum FileLoadError {
-    FileNotFound,
-    FileNotReadable,
-}
