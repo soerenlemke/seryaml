@@ -1,0 +1,16 @@
+# seryaml
+
+`seryaml` is a Rust library for serializing and deserializing YAML data using `serde`.
+
+## Features
+
+- Parse YAML strings into Rust data structures
+- Serialize Rust data structures into YAML strings
+
+## Usage
+
+Add `seryaml` to your `Cargo.toml`:
+
+```toml
+[dependencies]
+seryaml = "0.1.0"
