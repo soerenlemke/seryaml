@@ -5,7 +5,6 @@
 ## Features
 
 - Parse YAML strings into Rust data structures
-- Serialize Rust data structures into YAML strings
 
 ## Usage
 
