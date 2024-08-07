@@ -16,51 +16,27 @@ fn parse_lines(lines: &[&str]) -> Result<YAMLData, YAMLParseError> {
         return Err(YAMLParseError::InvalidFormat);
     }
 
-    if lines[0].starts_with('-') {
-        parse_sequence(lines)
-    } else if lines[0].contains(':') {
-        parse_mapping(lines)
-    } else {
-        Ok(YAMLData::Scalar(lines.join(" ").trim().to_string()))
-    }
-}
-
-fn parse_sequence(lines: &[&str]) -> Result<YAMLData, YAMLParseError> {
-    let mut items = Vec::new();
-    let mut nested_lines = Vec::new();
-    let mut in_nested = false;
+    let mut results = Vec::new();
 
     for line in lines {
         if line.starts_with('-') {
-            if in_nested {
-                let value = parse_lines(&nested_lines)?;
-                items.push(value);
-                nested_lines.clear();
-                in_nested = false;
-            }
-            let item = line.trim_start_matches('-').trim();
-            if item.is_empty() {
-                return Err(YAMLParseError::InvalidFormat);
-            }
-            if item.starts_with(':') || item.contains(':') {
-                nested_lines.push(item);
-                in_nested = true;
-            } else {
-                items.push(parse_yaml(item)?);
-            }
-        } else if in_nested {
-            nested_lines.push(line);
+            results.push(parse_sequence(line)?);
+        } else if line.contains(':') {
+            results.push(parse_mapping(&[line])?);
         } else {
-            return Err(YAMLParseError::InvalidFormat);
+            results.push(YAMLData::Scalar(line.trim().to_string()));
         }
     }
 
-    if in_nested {
-        let value = parse_lines(&nested_lines)?;
-        items.push(value);
-    }
+    Ok(YAMLData::Sequence(results))
+}
 
-    Ok(YAMLData::Sequence(items))
+fn parse_sequence(line: &str) -> Result<YAMLData, YAMLParseError> {
+    let item = line.trim_start_matches('-').trim();
+    if item.is_empty() {
+        return Err(YAMLParseError::InvalidFormat);
+    }
+    Ok(YAMLData::Scalar(item.to_string()))
 }
 
 fn parse_mapping(lines: &[&str]) -> Result<YAMLData, YAMLParseError> {
