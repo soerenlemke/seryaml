@@ -1,6 +1,6 @@
 # seryaml
 
-`seryaml` is a Rust library for serializing and deserializing YAML data using `serde`.
+seryaml is a Rust library for serializing and deserializing YAML. Currently, work is focused on developing the parser.
 
 ## Features
 
