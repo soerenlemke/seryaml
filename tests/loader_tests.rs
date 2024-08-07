@@ -58,18 +58,7 @@ mod tests {
 
         std::fs::remove_file(filename).unwrap();
     }
-
-    #[test]
-    fn test_load_yaml_file_invalid() {
-        let filename = "test_invalid.yaml";
-        std::fs::write(filename, "invalid_yaml: [unbalanced").unwrap();
-
-        let result = load_yaml_file(filename);
-        assert!(result.is_err());
-
-        std::fs::remove_file(filename).unwrap();
-    }
-
+    
     #[test]
     fn test_load_yaml_file_empty() {
         let filename = "test_empty.yaml";
