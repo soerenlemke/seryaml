@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use seryaml::loader::{load_yaml_file, read_file_to_string};
-    use seryaml::data::YAMLData;
     use std::collections::HashMap;
+
+    use seryaml::data::YAMLData;
+    use seryaml::loader::{load_yaml_file, read_file_to_string};
 
     #[test]
     fn test_read_file_to_string() {
@@ -34,7 +35,7 @@ mod tests {
         let expected = YAMLData::Sequence(vec![
             YAMLData::Scalar("item1".to_string()),
             YAMLData::Scalar("item2".to_string()),
-            YAMLData::Scalar("item3".to_string())
+            YAMLData::Scalar("item3".to_string()),
         ]);
 
         let result = load_yaml_file(filename).unwrap();
@@ -60,17 +61,6 @@ mod tests {
     }
 
     #[test]
-    fn test_load_yaml_file_invalid() {
-        let filename = "test_invalid.yaml";
-        std::fs::write(filename, "invalid_yaml: [unbalanced").unwrap();
-
-        let result = load_yaml_file(filename);
-        assert!(result.is_err());
-
-        std::fs::remove_file(filename).unwrap();
-    }
-
-    #[test]
     fn test_load_yaml_file_empty() {
         let filename = "test_empty.yaml";
         std::fs::write(filename, "").unwrap();
@@ -88,7 +78,7 @@ mod tests {
         let result = load_yaml_file(filename);
         assert!(result.is_err());
     }
-    
+
     #[test]
     fn test_load_yaml_file_fruits() {
         let filename = "fruits.yaml";

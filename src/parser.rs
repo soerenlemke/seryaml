@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+
 use crate::data::YAMLData;
 use crate::error::YAMLParseError;
 
