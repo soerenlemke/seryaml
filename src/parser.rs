@@ -17,28 +17,67 @@ fn parse_lines(lines: &[&str]) -> Result<YAMLData, YAMLParseError> {
     }
 
     let mut results = Vec::new();
-    let mut mapping_lines = Vec::new();
+    let mut current_mapping = HashMap::new();
+    let mut current_key = None;
+    let mut current_sequence = Vec::new();
+    let mut current_indent = 0;
+    let mut in_sequence = false;
 
     for line in lines {
-        if line.starts_with('-') {
-            if !mapping_lines.is_empty() {
-                results.push(parse_mapping(&mapping_lines.iter().copied().collect::<Vec<&str>>().join("\n"))?);
-                mapping_lines.clear();
+        let trimmed_line = line.trim();
+        let line_indent = line.chars().take_while(|c| c.is_whitespace()).count();
+
+        if trimmed_line.starts_with('-') {
+            if let Some(_key) = &current_key {
+                current_sequence.push(parse_sequence(trimmed_line)?);
+                in_sequence = true;
+            } else {
+                if !current_mapping.is_empty() {
+                    results.push(YAMLData::Mapping(current_mapping));
+                    current_mapping = HashMap::new();
+                }
+                results.push(parse_sequence(trimmed_line)?);
             }
-            results.push(parse_sequence(line)?);
-        } else if line.contains(':') {
-            mapping_lines.push(line);
+        } else if trimmed_line.contains(':') {
+            if in_sequence && line_indent <= current_indent {
+                if let Some(key) = current_key.take() {
+                    current_mapping.insert(key, YAMLData::Sequence(current_sequence));
+                    current_sequence = Vec::new();
+                }
+                in_sequence = false;
+            }
+            let (key, value) = trimmed_line.split_once(':').unwrap();
+            current_key = Some(key.trim().to_string());
+            current_indent = line_indent;
+            if !value.trim().is_empty() {
+                current_mapping.insert(current_key.clone().unwrap(), YAMLData::Scalar(value.trim().to_string()));
+                current_key = None;
+            }
+        } else if trimmed_line.is_empty() {
+            continue;
         } else {
-            if !mapping_lines.is_empty() {
-                results.push(parse_mapping(&mapping_lines.join("\n"))?);
-                mapping_lines.clear();
+            if let Some(key) = current_key.take() {
+                if in_sequence {
+                    current_mapping.insert(key, YAMLData::Sequence(current_sequence));
+                    current_sequence = Vec::new();
+                }
             }
-            results.push(YAMLData::Scalar(line.trim().to_string()));
+            if !current_mapping.is_empty() {
+                results.push(YAMLData::Mapping(current_mapping));
+                current_mapping = HashMap::new();
+            }
+            results.push(YAMLData::Scalar(trimmed_line.to_string()));
         }
     }
 
-    if !mapping_lines.is_empty() {
-        results.push(parse_mapping(&mapping_lines.iter().copied().collect::<Vec<&str>>().join("\n"))?);
+    if let Some(key) = current_key {
+        if !current_sequence.is_empty() {
+            current_mapping.insert(key, YAMLData::Sequence(current_sequence));
+        }
+    }
+
+    if !current_mapping.is_empty() {
+        results.push(YAMLData::Mapping(current_mapping));
     }
 
     if results.len() == 1 {
@@ -54,21 +93,4 @@ fn parse_sequence(line: &str) -> Result<YAMLData, YAMLParseError> {
         return Err(YAMLParseError::InvalidFormat);
     }
     Ok(YAMLData::Scalar(item.to_string()))
-}
-
-fn parse_mapping(lines: &str) -> Result<YAMLData, YAMLParseError> {
-    let mut map = HashMap::new();
-    for line in lines.lines() {
-        if let Some((k, v)) = line.split_once(':') {
-            let key = k.trim().to_string();
-            let value = v.trim().to_string();
-            if key.is_empty() || value.is_empty() {
-                return Err(YAMLParseError::InvalidFormat);
-            }
-            map.insert(key, YAMLData::Scalar(value));
-        } else {
-            return Err(YAMLParseError::InvalidFormat);
-        }
-    }
-    Ok(YAMLData::Mapping(map))
 }
