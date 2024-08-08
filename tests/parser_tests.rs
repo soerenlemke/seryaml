@@ -1,6 +1,8 @@
 use seryaml::data::YAMLData;
 use seryaml::parser::parse_yaml;
 
+// tests from described cases: https://yaml.org/spec/1.2.2/#21-collections
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -47,6 +49,28 @@ mod tests {
         map.insert("american".to_string(), YAMLData::Sequence(american));
         map.insert("national".to_string(), YAMLData::Sequence(national));
         let expected = YAMLData::Mapping(map);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_sequence_of_mappings() {
+        let yaml = "- name: Mark McGwire\n  hr: 65\n  avg: 0.278\n- name: Sammy Sosa\n  hr: 63\n  avg: 0.288";
+        let result = parse_yaml(yaml).unwrap();
+        let mark_mcgwire = {
+            let mut map = std::collections::HashMap::new();
+            map.insert("name".to_string(), YAMLData::Scalar("Mark McGwire".to_string()));
+            map.insert("hr".to_string(), YAMLData::Scalar("65".to_string()));
+            map.insert("avg".to_string(), YAMLData::Scalar("0.278".to_string()));
+            YAMLData::Mapping(map)
+        };
+        let sammy_sosa = {
+            let mut map = std::collections::HashMap::new();
+            map.insert("name".to_string(), YAMLData::Scalar("Sammy Sosa".to_string()));
+            map.insert("hr".to_string(), YAMLData::Scalar("63".to_string()));
+            map.insert("avg".to_string(), YAMLData::Scalar("0.288".to_string()));
+            YAMLData::Mapping(map)
+        };
+        let expected = YAMLData::Sequence(vec![mark_mcgwire, sammy_sosa]);
         assert_eq!(result, expected);
     }
 }
