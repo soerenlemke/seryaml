@@ -4,7 +4,7 @@ seryaml is a Rust library for serializing and deserializing YAML. Currently, wor
 
 ## Features
 
-- Parse YAML strings into Rust data structures
+- Parse YAML into Rust data structures
 
 ## Usage
 
